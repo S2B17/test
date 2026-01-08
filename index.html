@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>经典吃豆人游戏 - HTML5版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #FFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #FF0;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #FF0;
+            letter-spacing: 3px;
+        }
+        
+        .game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 5px;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.2);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #111;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+        
+        .info-box {
+            text-align: center;
+        }
+        
+        .info-title {
+            color: #AAA;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #FF0;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin-top: 25px;
+            text-align: center;
+            background-color: #111;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .controls h3 {
+            color: #FF0;
+            margin-bottom: 15px;
+        }
+        
+        .key {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            line-height: 50px;
+            background-color: #333;
+            color: #FFF;
+            border-radius: 5px;
+            margin: 0 5px;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #222;
+        }
+        
+        .key.up-down {
+            margin: 5px 0;
+        }
+        
+        .instructions {
+            max-width: 800px;
+            margin-top: 25px;
+            background-color: #111;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+        
+        .instructions h3 {
+            color: #FF0;
+            margin-bottom: 10px;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #CCC;
+        }
+        
+        .game-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 30px 50px;
+            border-radius: 15px;
+            border: 3px solid #FF0;
+            text-align: center;
+            z-index: 10;
+            display: none;
+        }
+        
+        .game-status h2 {
+            color: #FF0;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+        
+        .btn {
+            background-color: #FF0;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #FFD700;
+            box-shadow: 0 0 15px #FF0;
+        }
+        
+        .lives {
+            display: flex;
+            justify-content: center;
+            margin-top: 5px;
+        }
+        
+        .life {
+            width: 25px;
+            height: 25px;
+            background-color: #FF0;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            margin: 0 5px;
+            transform: rotate(90deg);
+        }
+        
+        @media (max-width: 850px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            #gameCanvas {
+                width: 95vw;
+                height: auto;
+            }
+            
+            .game-info, .controls, .instructions {
+                width: 95vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>经典吃豆人</h1>
+        <p>使用方向键移动吃豆人，吃掉所有豆子，躲避幽灵！</p>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        
+        <div id="gameStatus" class="game-status">
+            <h2 id="statusTitle">游戏暂停</h2>
+            <p id="statusMessage">按空格键继续游戏</p>
+            <button id="restartBtn" class="btn">重新开始</button>
+        </div>
+    </div>
+    
+    <div class="game-info">
+        <div class="info-box">
+            <div class="info-title">得分</div>
+            <div id="score" class="info-value">0</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">关卡</div>
+            <div id="level" class="info-value">1</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">生命</div>
+            <div id="livesDisplay" class="lives">
+                <div class="life"></div>
+                <div class="life"></div>
+                <div class="life"></div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">剩余豆子</div>
+            <div id="dotsLeft" class="info-value">240</div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <h3>控制方式</h3>
+        <div>
+            <div class="key up-down">↑</div>
+        </div>
+        <div>
+            <div class="key">←</div>
+            <div class="key">↓</div>
+            <div class="key">→</div>
+        </div>
+        <p style="margin-top: 15px; color: #AAA;">空格键: 暂停/继续游戏</p>
+    </div>
+    
+    <div class="instructions">
+        <h3>游戏说明</h3>
+        <p>1. 使用方向键控制吃豆人移动，吃掉迷宫中的所有小豆子</p>
+        <p>2. 避开幽灵，被幽灵抓住会损失一条生命</p>
+        <p>3. 吃掉能量豆（大闪光豆子）后，可以暂时吃掉幽灵获得额外分数</p>
+        <p>4. 吃完所有豆子即可进入下一关</p>
+        <p>5. 游戏共有3条生命，全部用完则游戏结束</p>
+    </div>
+
+    <script>
+        // 游戏变量
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const dotsLeftElement = document.getElementById('dotsLeft');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const gameStatus = document.getElementById('gameStatus');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusMessage = document.getElementById('statusMessage');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // 游戏配置
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let dots = [];
+        let powerPellets = [];
+        let pacman = {
+            x: 10,
+            y: 15,
+            direction: 'right',
+            nextDirection: 'right',
+            mouthOpen: 0,
+            mouthSpeed: 0.2,
+            mouthMax: 0.7
+        };
+        
+        let ghosts = [
+            { x: 9, y: 9, color: '#FF0000', direction: 'left', speed: 1, frightened: false, frightenedTimer: 0 }, // 红色幽灵
+            { x: 10, y: 9, color: '#00FFFF', direction: 'up', speed: 0.9, frightened: false, frightenedTimer: 0 }, // 青色幽灵
+            { x: 11, y: 9, color: '#FFB8DE', direction: 'right', speed: 0.8, frightened: false, frightenedTimer: 0 }, // 粉色幽灵
+            { x: 10, y: 10, color: '#FFB852', direction: 'down', speed: 0.7, frightened: false, frightenedTimer: 0 }  // 橙色幽灵
+        ];
+        
+        // 迷宫墙壁数据 - 1表示墙壁，0表示可通行区域
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        
+        let gameRunning = true;
+        let gamePaused = false;
+        let dotsEaten = 0;
+        const totalDots = 240; // 总豆子数
+        let powerPelletActive = false;
+        let powerPelletTimer = 0;
+        const POWER_PELLET_DURATION = 300; // 能量豆效果持续时间（帧数）
+
+        // 初始化豆子
+        function initDots() {
+            dots = [];
+            powerPellets = [];
+            dotsEaten = 0;
+            
+            for (let row = 0; row < maze.length; row++) {
+                for (let col = 0; col < maze[row].length; col++) {
+                    // 只在可通行区域放置豆子
+                    if (maze[row][col] === 0) {
+                        // 在特定位置放置能量豆
+                        if ((row === 1 && col === 1) || 
+                            (row === 1 && col === 38) || 
+                            (row === 9 && col === 1) || 
+                            (row === 9 && col === 38)) {
+                            powerPellets.push({x: col, y: row});
+                        } else {
+                            dots.push({x: col, y: row});
+                        }
+                    }
+                }
+            }
+            
+            updateDotsLeft();
+        }
+
+        // 绘制迷宫
+        function drawMaze() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#2222FF';
+            ctx.lineWidth = 2;
+            
+            for (let row = 0; row < maze.length; row++) {
+                for (let col = 0; col < maze[row].length; col++) {
+                    if (maze[row][col] === 1) {
+                        ctx.fillStyle = '#111166';
+                        ctx.fillRect(col * gridSize, row * gridSize, gridSize, gridSize);
+                        
+                        ctx.strokeStyle = '#2222FF';
+                        ctx.strokeRect(col * gridSize, row * gridSize, gridSize, gridSize);
+                    }
+                }
+            }
+        }
+
+        // 绘制豆子
+        function drawDots() {
+            ctx.fillStyle = '#FFFF00';
+            for (let dot of dots) {
+                ctx.beginPath();
+                ctx.arc(
+                    dot.x * gridSize + gridSize / 2,
+                    dot.y * gridSize + gridSize / 2,
+                    3, 0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            
+            // 绘制能量豆
+            ctx.fillStyle = '#FFFFFF';
+            for (let pellet of powerPellets) {
+                ctx.beginPath();
+                ctx.arc(
+                    pellet.x * gridSize + gridSize / 2,
+                    pellet.y * gridSize + gridSize / 2,
+                    8, 0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // 添加闪光效果
+                ctx.fillStyle = '#FFFF00';
+                ctx.beginPath();
+                ctx.arc(
+                    pellet.x * gridSize + gridSize / 2,
+                    pellet.y * gridSize + gridSize / 2,
+                    5, 0, Math.PI * 2
+                );
+                ctx.fill();
+                ctx.fillStyle = '#FFFFFF';
+            }
+        }
+
+        // 绘制吃豆人
+        function drawPacman() {
+            // 计算嘴巴开合角度
+            pacman.mouthOpen += pacman.mouthSpeed;
+            if (pacman.mouthOpen > pacman.mouthMax || pacman.mouthOpen < 0) {
+                pacman.mouthSpeed *= -1;
+            }
+            
+            const mouthAngle = pacman.mouthOpen * Math.PI;
+            let startAngle, endAngle;
+            
+            // 根据方向确定嘴巴角度
+            switch(pacman.direction) {
+                case 'right':
+                    startAngle = mouthAngle / 2;
+                    endAngle = Math.PI * 2 - mouthAngle / 2;
+                    break;
+                case 'left':
+                    startAngle = Math.PI + mouthAngle / 2;
+                    endAngle = Math.PI * 3 - mouthAngle / 2;
+                    break;
+                case 'up':
+                    startAngle = Math.PI * 1.5 + mouthAngle / 2;
+                    endAngle = Math.PI * 3.5 - mouthAngle / 2;
+                    break;
+                case 'down':
+                    startAngle = Math.PI * 0.5 + mouthAngle / 2;
+                    endAngle = Math.PI * 2.5 - mouthAngle / 2;
+                    break;
+            }
+            
+            // 绘制吃豆人
+            ctx.fillStyle = '#FFFF00';
+            ctx.beginPath();
+            ctx.arc(
+                pacman.x * gridSize + gridSize / 2,
+                pacman.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                startAngle, endAngle
+            );
+            ctx.lineTo(
+                pacman.x * gridSize + gridSize / 2,
+                pacman.y * gridSize + gridSize / 2
+            );
+            ctx.fill();
+        }
+
+        // 绘制幽灵
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                // 如果幽灵处于受惊吓状态，绘制为蓝色
+                if (ghost.frightened) {
+                    ctx.fillStyle = '#2222FF';
+                } else {
+                    ctx.fillStyle = ghost.color;
+                }
+                
+                // 绘制幽灵身体
+                ctx.beginPath();
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2,
+                    ghost.y * gridSize + gridSize / 2,
+                    gridSize / 2 - 2, Math.PI, 0, false
+                );
+                ctx.lineTo(
+                    ghost.x * gridSize - gridSize / 2 + 2,
+                    ghost.y * gridSize + gridSize / 2
+                );
+                
+                // 绘制幽灵波浪底部
+                const waveHeight = 3;
+                for (let i = 0; i < 3; i++) {
+                    ctx.lineTo(
+                        ghost.x * gridSize - gridSize / 2 + 2 + i * 6,
+                        ghost.y * gridSize + gridSize / 2 + waveHeight
+                    );
+                    ctx.lineTo(
+                        ghost.x * gridSize - gridSize / 2 + 2 + i * 6 + 3,
+                        ghost.y * gridSize + gridSize / 2 - waveHeight
+                    );
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                // 绘制幽灵眼睛
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2 - 5,
+                    ghost.y * gridSize + gridSize / 2 - 2,
+                    3, 0, Math.PI * 2
+                );
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2 + 5,
+                    ghost.y * gridSize + gridSize / 2 - 2,
+                    3, 0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // 绘制幽灵瞳孔
+                ctx.fillStyle = '#0000FF';
+                let pupilXOffset = 0;
+                let pupilYOffset = 0;
+                
+                // 根据幽灵方向调整瞳孔位置
+                switch(ghost.direction) {
+                    case 'left': pupilXOffset = -1; break;
+                    case 'right': pupilXOffset = 1; break;
+                    case 'up': pupilYOffset = -1; break;
+                    case 'down': pupilYOffset = 1; break;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2 - 5 + pupilXOffset,
+                    ghost.y * gridSize + gridSize / 2 - 2 + pupilYOffset,
+                    1.5, 0, Math.PI * 2
+                );
+                ctx.arc(
+                    ghost.x * gridSize + gridSize / 2 + 5 + pupilXOffset,
+                    ghost.y * gridSize + gridSize / 2 - 2 + pupilYOffset,
+                    1.5, 0, Math.PI * 2
+                );
+                ctx.fill();
+            });
+        }
+
+        // 更新吃豆人位置
+        function updatePacman() {
+            // 检查下一个方向是否可行
+            let nextX = pacman.x;
+            let nextY = pacman.y;
+            
+            switch(pacman.nextDirection) {
+                case 'left': nextX--; break;
+                case 'right': nextX++; break;
+                case 'up': nextY--; break;
+                case 'down': nextY++; break;
+            }
+            
+            // 如果下一个方向可行，则改变方向
+            if (isValidMove(nextX, nextY)) {
+                pacman.direction = pacman.nextDirection;
+            }
+            
+            // 根据当前方向移动
+            nextX = pacman.x;
+            nextY = pacman.y;
+            
+            switch(pacman.direction) {
+                case 'left': nextX--; break;
+                case 'right': nextX++; break;
+                case 'up': nextY--; break;
+                case 'down': nextY++; break;
+            }
+            
+            // 如果移动可行，则更新位置
+            if (isValidMove(nextX, nextY)) {
+                pacman.x = nextX;
+                pacman.y = nextY;
+            }
+            
+            // 检查是否吃到豆子
+            checkDotCollision();
+            checkPowerPelletCollision();
+            
+            // 处理穿越隧道
+            if (pacman.x < 0) pacman.x = tileCount - 1;
+            if (pacman.x >= tileCount) pacman.x = 0;
+        }
+
+        // 更新幽灵
+        function updateGhosts() {
+            ghosts.forEach(ghost => {
+                // 更新受惊吓状态计时器
+                if (ghost.frightened) {
+                    ghost.frightenedTimer--;
+                    if (ghost.frightenedTimer <= 0) {
+                        ghost.frightened = false;
+                    }
+                }
+                
+                // 随机决定幽灵的移动方向
+                const directions = ['left', 'right', 'up', 'down'];
+                const validDirections = [];
+                
+                // 检查所有可能的方向
+                for (let dir of directions) {
+                    let testX = ghost.x;
+                    let testY = ghost.y;
+                    
+                    switch(dir) {
+                        case 'left': testX--; break;
+                        case 'right': testX++; break;
+                        case 'up': testY--; break;
+                        case 'down': testY++; break;
+                    }
+                    
+                    // 确保幽灵不会反向移动（除非受惊吓）
+                    let isOpposite = false;
+                    if ((ghost.direction === 'left' && dir === 'right') ||
+                        (ghost.direction === 'right' && dir === 'left') ||
+                        (ghost.direction === 'up' && dir === 'down') ||
+                        (ghost.direction === 'down' && dir === 'up')) {
+                        isOpposite = true;
+                    }
+                    
+                    // 受惊吓的幽灵可以反向移动
+                    if (isValidMove(testX, testY) && (ghost.frightened || !isOpposite)) {
+                        validDirections.push(dir);
+                    }
+                }
+                
+                // 如果有可行的方向，随机选择一个
+                if (validDirections.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * validDirections.length);
+                    ghost.direction = validDirections[randomIndex];
+                }
+                
+                // 根据方向移动幽灵
+                let nextX = ghost.x;
+                let nextY = ghost.y;
+                
+                switch(ghost.direction) {
+                    case 'left': nextX -= ghost.speed; break;
+                    case 'right': nextX += ghost.speed; break;
+                    case 'up': nextY -= ghost.speed; break;
+                    case 'down': nextY += ghost.speed; break;
+                }
+                
+                // 如果移动可行，则更新位置
+                if (isValidMove(Math.floor(nextX), Math.floor(nextY))) {
+                    ghost.x = nextX;
+                    ghost.y = nextY;
+                }
+                
+                // 处理穿越隧道
+                if (ghost.x < 0) ghost.x = tileCount - 1;
+                if (ghost.x >= tileCount) ghost.x = 0;
+                
+                // 检查与吃豆人的碰撞
+                checkGhostCollision(ghost);
+            });
+        }
+
+        // 检查移动是否有效
+        function isValidMove(x, y) {
+            // 确保位置在画布范围内
+            if (x < 0 || x >= tileCount || y < 0 || y >= maze.length) {
+                return false;
+            }
+            
+            // 检查是否为墙壁
+            if (maze[Math.floor(y)][Math.floor(x)] === 1) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 检查豆子碰撞
+        function checkDotCollision() {
+            for (let i = dots.length - 1; i >= 0; i--) {
+                if (Math.abs(pacman.x - dots[i].x) < 0.5 && Math.abs(pacman.y - dots[i].y) < 0.5) {
+                    dots.splice(i, 1);
+                    score += 10;
+                    dotsEaten++;
+                    updateScore();
+                    updateDotsLeft();
+                    
+                    // 检查是否吃完了所有豆子
+                    if (dots.length === 0 && powerPellets.length === 0) {
+                        levelComplete();
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        // 检查能量豆碰撞
+        function checkPowerPelletCollision() {
+            for (let i = powerPellets.length - 1; i >= 0; i--) {
+                if (Math.abs(pacman.x - powerPellets[i].x) < 0.5 && Math.abs(pacman.y - powerPellets[i].y) < 0.5) {
+                    powerPellets.splice(i, 1);
+                    score += 50;
+                    updateScore();
+                    
+                    // 激活能量豆效果
+                    activatePowerPellet();
+                    
+                    // 检查是否吃完了所有豆子
+                    if (dots.length === 0 && powerPellets.length === 0) {
+                        levelComplete();
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        // 激活能量豆效果
+        function activatePowerPellet() {
+            powerPelletActive = true;
+            powerPelletTimer = POWER_PELLET_DURATION;
+            
+            // 将所有幽灵设置为受惊吓状态
+            ghosts.forEach(ghost => {
+                ghost.frightened = true;
+                ghost.frightenedTimer = POWER_PELLET_DURATION;
+            });
+        }
+
+        // 检查幽灵碰撞
+        function checkGhostCollision(ghost) {
+            const distance = Math.sqrt(
+                Math.pow(pacman.x - ghost.x, 2) + 
+                Math.pow(pacman.y - ghost.y, 2)
+            );
+            
+            if (distance < 0.8) {
+                if (ghost.frightened) {
+                    // 吃掉受惊吓的幽灵
+                    score += 200;
+                    updateScore();
+                    
+                    // 将幽灵重置到起始位置
+                    ghost.x = 10;
+                    ghost.y = 9;
+                    ghost.frightened = false;
+                } else {
+                    // 吃豆人被幽灵抓住
+                    loseLife();
+                }
+            }
+        }
+
+        // 损失生命
+        function loseLife() {
+            lives--;
+            updateLivesDisplay();
+            
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                // 重置吃豆人和幽灵位置
+                resetPositions();
+                showStatus("损失一条生命", "按空格键继续");
+                gamePaused = true;
+            }
+        }
+
+        // 重置位置
+        function resetPositions() {
+            pacman.x = 10;
+            pacman.y = 15;
+            pacman.direction = 'right';
+            pacman.nextDirection = 'right';
+            
+            ghosts[0].x = 9;
+            ghosts[0].y = 9;
+            ghosts[1].x = 10;
+            ghosts[1].y = 9;
+            ghosts[2].x = 11;
+            ghosts[2].y = 9;
+            ghosts[3].x = 10;
+            ghosts[3].y = 10;
+            
+            ghosts.forEach(ghost => {
+                ghost.frightened = false;
+                ghost.frightenedTimer = 0;
+            });
+        }
+
+        // 关卡完成
+        function levelComplete() {
+            level++;
+            levelElement.textContent = level;
+            
+            // 每过一关增加难度（幽灵速度加快）
+            ghosts.forEach(ghost => {
+                ghost.speed += 0.1;
+            });
+            
+            // 重置游戏
+            initDots();
+            resetPositions();
+            
+            showStatus(`关卡 ${level}`, "按空格键开始");
+            gamePaused = true;
+        }
+
+        // 游戏结束
+        function gameOver() {
+            gameRunning = false;
+            showStatus("游戏结束", `最终得分: ${score}`);
+        }
+
+        // 显示状态消息
+        function showStatus(title, message) {
+            statusTitle.textContent = title;
+            statusMessage.textContent = message;
+            gameStatus.style.display = 'block';
+        }
+
+        // 隐藏状态消息
+        function hideStatus() {
+            gameStatus.style.display = 'none';
+        }
+
+        // 更新分数显示
+        function updateScore() {
+            scoreElement.textContent = score;
+        }
+
+        // 更新剩余豆子显示
+        function updateDotsLeft() {
+            dotsLeftElement.textContent = dots.length + powerPellets.length;
+        }
+
+        // 更新生命显示
+        function updateLivesDisplay() {
+            livesDisplay.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const life = document.createElement('div');
+                life.className = 'life';
+                livesDisplay.appendChild(life);
+            }
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            if (!gamePaused) {
+                // 更新游戏状态
+                updatePacman();
+                updateGhosts();
+                
+                // 更新能量豆计时器
+                if (powerPelletActive) {
+                    powerPelletTimer--;
+                    if (powerPelletTimer <= 0) {
+                        powerPelletActive = false;
+                    }
+                }
+            }
+            
+            // 绘制游戏
+            drawMaze();
+            drawDots();
+            drawPacman();
+            drawGhosts();
+            
+            // 继续循环
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    pacman.nextDirection = 'left';
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                    pacman.nextDirection = 'right';
+                    e.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    pacman.nextDirection = 'up';
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                    pacman.nextDirection = 'down';
+                    e.preventDefault();
+                    break;
+                case ' ':
+                    // 空格键暂停/继续游戏
+                    if (gameRunning) {
+                        gamePaused = !gamePaused;
+                        if (gamePaused) {
+                            showStatus("游戏暂停", "按空格键继续");
+                        } else {
+                            hideStatus();
+                        }
+                    }
+                    e.preventDefault();
+                    break;
+            }
+        });
+
+        // 重新开始游戏
+        restartBtn.addEventListener('click', () => {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameRunning = true;
+            gamePaused = false;
+            
+            updateScore();
+            levelElement.textContent = level;
+            updateLivesDisplay();
+            
+            // 重置幽灵速度
+            ghosts[0].speed = 1;
+            ghosts[1].speed = 0.9;
+            ghosts[2].speed = 0.8;
+            ghosts[3].speed = 0.7;
+            
+            initDots();
+            resetPositions();
+            hideStatus();
+            
+            // 重新开始游戏循环
+            if (!gamePaused) {
+                gameLoop();
+            }
+        });
+
+        // 初始化游戏
+        function initGame() {
+            initDots();
+            updateLivesDisplay();
+            gameLoop();
+            
+            // 显示开始消息
+            showStatus("经典吃豆人", "按空格键开始游戏");
+            gamePaused = true;
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+</html>
